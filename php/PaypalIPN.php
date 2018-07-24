@@ -6,6 +6,10 @@ class PaypalIPN
     private $use_sandbox = false;
     /** @var bool Indicates if the local certificates are used. */
     private $use_local_certs = true;
+    /** @var $use_proxy Indicates the proxy to use, if any */
+    private $use_proxy = null;
+    /** @var bool $use_proxy_tunnel Indicates if proxy tunnel is used */
+    private $use_proxy_tunnel = false;
 
     /** Production Postback URL */
     const VERIFY_URI = 'https://ipnpb.paypal.com/cgi-bin/webscr';
@@ -35,6 +39,25 @@ class PaypalIPN
     public function usePHPCerts()
     {
         $this->use_local_certs = false;
+    }
+    
+    /**
+     * Sets curl to use the given proxy
+     * @return void
+     */
+    public function useProxy($proxy_url)
+    {
+        $this->use_proxy = $proxy_url;
+    }
+    
+    /**
+     * Sets curl to use the proxy as a tunnel (i.e., to use
+     * HTTP CONNECT protocol)
+     * @return void
+     */
+    public function useProxyTunnel()
+    {
+        $this->use_proxy_tunnel = true;
     }
 
     /**
@@ -104,6 +127,14 @@ class PaypalIPN
         curl_setopt($ch, CURLOPT_SSLVERSION, 6);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+        
+        if (isset($this->use_proxy)) {
+            curl_setopt($ch, CURLOPT_PROXY, $this->use_proxy);
+            if ($this->use_proxy_tunnel) {
+                curl_setopt($ch, CURLOPT_HTTPPROXYTUNNEL , true);
+            }
+        }
+
 
         // This is often required if the server is missing a global cert bundle, or is using an outdated one.
         if ($this->use_local_certs) {
